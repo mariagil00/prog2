@@ -1,3 +1,4 @@
+
 """ MA3.py
 
 Student: Maria Gil Sancho 
@@ -80,11 +81,22 @@ def sphere_volume_numba(n:int, d:int)->float:
     
 
 #Exc4: parallel code - parallelize actual computations by splitting data
-def sphere_volume_parallel2(n, d, np=10):
+def points_inside(n,d):
+    r=1
+    points_of_dimension=[[random.uniform(-1,1) for i in range(d)] for j in range(n)]
+    distance_points_of_dimension=[functools.reduce(lambda x,y : x+y, map(lambda x: x**2,x))for x in points_of_dimension]
+    filter_inside=list(filter(lambda x: x<=r,distance_points_of_dimension))
+    return len(filter_inside)
+
+def sphere_volume_parallel(n, d, np=10):
+   with future.ProcessPoolExecutor() as ex:
+    futures = [ex.submit(points_inside, n // np, d) for _ in range(np)]
+    inside_total = sum(f.result() for f in futures)
+   return 2**d * (inside_total / n)
     # n is the number of points
     # d is the number of dimensions of the sphere
     # np is the number of processes
-    return 
+    
     
 def main():
     # Exc1
@@ -132,13 +144,25 @@ def main():
     # Exc4
     n = 1000000
     d = 11
-    start = pc()
+    start_sequential = pc()
     sphere_volume(n, d)
-    stop = pc()
-    print(f"Exc4: Sequential time of {d} and {n}: {stop-start}")
+    stop_sequential = pc()
+    print(f"Exc4: Sequential time of {d} and {n}: {stop_sequential-start_sequential}")
+    #2.28 seconds
     print("What is parallel time?")
-    
-    
+    start_parallel = pc()
+    v=sphere_volume_parallel(n, d,np=10)
+    stop_parallel = pc()
+    print(f"Exc4: Parallel time of {d} and {n}: {stop_parallel-start_parallel}")
+    #1.76 seconds
 
+    #Run code in Linux servers provided by IT department --> vitsippa.it.uu.se
+    #Not able to run because no numba and matplotlib.
+    #1. Create virtual environment: python3 -m venv venv
+    #2. Activate virtual environment: source venv/bin/activate
+    #3. Install numba: pip install numba
+    #4. Install matplotlin: pip install matplotlib
+    #Exc4: Sequential time of 11 and 1000000: 14.072936641983688
+    #Exc4: Parallel time of 11 and 1000000: 1.604410293046385
 if __name__ == '__main__':
 	main()
